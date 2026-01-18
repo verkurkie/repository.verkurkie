@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+          cache-dependency-path: 'pyproject.toml'
+
+      - name: Python Semantic Release
+        id: semantic
+        uses: python-semantic-release/python-semantic-release@v9.11.0
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FTP_HOST: ${{ vars.FTP_HOST }}
+          FTP_USER: ${{ vars.FTP_USER }}
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: GitHub Release
+        if: steps.semantic.outputs.released == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: repository.verkurkie-*.zip
+          tag_name: ${{ steps.semantic.outputs.tag }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
