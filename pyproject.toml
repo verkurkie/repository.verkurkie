@@ -23,7 +23,7 @@ version_variables = ["addon.xml:version"]
 branch = "main"
 upload_to_pypi = false
 build_command = "python3 generator.py --zip --transfer --changelog"
-commit_parser = "conventional"
+commit_parser = "angular"
 
 [tool.semantic_release.commit_parser_options]
 major_tags = ["major"]
