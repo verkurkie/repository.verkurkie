@@ -22,7 +22,7 @@ version_toml = ["pyproject.toml:project.version"]
 version_variables = ["addon.xml:version"]
 branch = "main"
 upload_to_pypi = false
-build_command = "GH_TOKEN=$GH_TOKEN GITHUB_TOKEN=$GITHUB_TOKEN python3 generator.py --zip --transfer"
+build_command = ""
 commit_parser = "conventional"
 
 [tool.semantic_release.changelog]

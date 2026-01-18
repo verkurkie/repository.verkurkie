@@ -49,6 +49,13 @@ jobs:
             echo "released=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Build and Version ZIP
+        env:
+          GH_TOKEN: ${{ secrets.PAT_GITHUB }}
+          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
+        if: steps.semantic.outputs.released == 'true'
+        run: python generator.py --zip --transfer
+
       - name: GitHub Release
         if: steps.semantic.outputs.released == 'true'
         env:
