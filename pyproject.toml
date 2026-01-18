@@ -1,11 +1,6 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "repository.verkurkie"
-version = "0.0.1"
-description = "Verkurkie Kodi Repository build scripts"
+description = "Verkurkie Kodi Repository"
 requires-python = ">=3.8"
 dependencies = [
     "python-dotenv",
@@ -18,15 +13,11 @@ dev = [
 ]
 
 [tool.semantic_release]
-version_toml = ["pyproject.toml:project.version"]
-version_variables = ["addon.xml:version"]
+version_variable = "addon.xml:version"
 branch = "main"
 upload_to_pypi = false
 build_command = ""
 commit_parser = "conventional"
-
-[tool.semantic_release.changelog]
-enabled = false
 
 [tool.semantic_release.commit_parser_options]
 major_tags = ["major"]
@@ -35,3 +26,6 @@ patch_tags = ["fix", "refactor"]
 
 [tool.semantic_release.publish]
 upload_to_vcs_release = false
+
+[tool.semantic_release.changelog]
+enabled = false

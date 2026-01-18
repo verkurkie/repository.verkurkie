@@ -15,11 +15,12 @@ def is_bump(v1, v2):
     Compares two version strings using semantic versioning logic.
     Returns True if v1 > v2, False otherwise.
     """
+
     def parse_version(v):
         # Extract digits and dots, then split and convert to ints
         # This handles cases like 'v1.0.1' or '1.0.1b' by stripping non-numeric chars
         parts = []
-        for part in re.split(r'[^0-9]+', v):
+        for part in re.split(r"[^0-9]+", v):
             if part:
                 parts.append(int(part))
         return parts
@@ -39,22 +40,23 @@ def is_bump(v1, v2):
 
 
 def update_addon_xml(addon_id, new_version, dry_run=False):
-    sub_dir = "" if addon_id == "repository.verkurkie" else f"{addon_id}/"
-    tree = ET.parse(f"{sub_dir}addon.xml")
+    tree = ET.parse("addon.xml")
     root = tree.getroot()
     current_version = root.get("version")
 
     if current_version == new_version:
-        print(f"the [{sub_dir}addon.xml] file is already at version [{new_version}] - skipping update.")
+        print(
+            f"the [addon.xml] file is already at version [{new_version}] - skipping update."
+        )
         return
 
-    print(f"Updating [{sub_dir}addon.xml] from [{current_version}] to [{new_version}]...")
+    print(f"Updating [addon.xml] from [{current_version}] to [{new_version}]...")
     if dry_run:
-        print(f"[DRY-RUN] Would update [{sub_dir}addon.xml] version.")
+        print("[DRY-RUN] Would update [addon.xml] version.")
         return
 
     root.set("version", new_version)
-    tree.write(f"{sub_dir}addon.xml", encoding="UTF-8", xml_declaration=True)
+    tree.write("addon.xml", encoding="UTF-8", xml_declaration=True)
 
 
 def generate_md5_file():
@@ -157,7 +159,6 @@ def update_changelog(new_version, dry_run=False):
 
 def build_zip(addon_id, version, dry_run=False):
     zip_name = f"{addon_id}-{version}.zip"
-    sub_dir = "" if addon_id == "repository.verkurkie" else f"{addon_id}/"
 
     # Files and directories to include as per RELEASE.md
     contents = {
@@ -184,24 +185,22 @@ def build_zip(addon_id, version, dry_run=False):
 
     with zipfile.ZipFile(zip_name, "w", zipfile.ZIP_DEFLATED) as zipf:
         for item in includes:
-            full_path = os.path.join(sub_dir, item)
-            if not os.path.exists(full_path):
-                print(f"Warning: [{full_path}] not found, skipping.")
+            if not os.path.exists(item):
+                print(f"Warning: [{item}] not found, skipping.")
                 continue
 
-            if os.path.isfile(full_path):
-                # Always put files under a directory named addon_id
+            if os.path.isfile(item):
                 arcname = os.path.join(addon_id, item)
-                zipf.write(full_path, arcname=arcname)
-            elif os.path.isdir(full_path):
-                for root, dirs, files in os.walk(full_path):
+                zipf.write(item, arcname=arcname)
+            elif os.path.isdir(item):
+                for root, dirs, files in os.walk(item):
                     if "__pycache__" in dirs:
                         dirs.remove("__pycache__")
 
                     for file in files:
                         file_path = os.path.join(root, file)
                         # Calculate arcname relative to the parent of item, then prefix with addon_id
-                        rel_path = os.path.relpath(file_path, sub_dir)
+                        rel_path = os.path.relpath(file_path)
                         arcname = os.path.join(addon_id, rel_path)
                         zipf.write(file_path, arcname=arcname)
 
@@ -240,7 +239,9 @@ def generate_repo_files(external_addons={}, dry_run=False):
         if use_token:
             token = os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN")
             if not token:
-                raise ValueError("GH_TOKEN or GITHUB_TOKEN environment variable is not set")
+                raise ValueError(
+                    "GH_TOKEN or GITHUB_TOKEN environment variable is not set"
+                )
             # Headers are the correct way to pass a personal access token to GitHub
             req.add_header("Authorization", f"token {token}")
 
@@ -270,7 +271,7 @@ def generate_repo_files(external_addons={}, dry_run=False):
         print("[DRY-RUN] Would write [addons.xml] and [addons.xml.md5] files.")
 
 
-def transfer_to_kodi_repository(repo_version, dry_run=False):
+def transfer_to_kodi_repository(new_version, dry_run=False):
     if dry_run:
         print("[DRY-RUN] Would transfer files to [verkurkie.com] via SFTP...")
         return
@@ -282,7 +283,7 @@ def transfer_to_kodi_repository(repo_version, dry_run=False):
     ftp_pass = os.getenv("FTP_PASS")
     ftp_base_dir = "/home/verkurkie/public_html/kodi"
     addon_id = "repository.verkurkie"
-    zip_file = f"{addon_id}-{repo_version}.zip"
+    zip_file = f"{addon_id}-{new_version}.zip"
 
     if not ftp_host or not ftp_user or not ftp_pass:
         print("SFTP credentials not found in environment variables. Aborting!")
@@ -319,13 +320,11 @@ def transfer_to_kodi_repository(repo_version, dry_run=False):
         except IOError:
             pass  # Already exists
 
-
         # Transfer the addon files
 
         # Upload files to the /repo folder
         print(f"- uploading ZIP file [{zip_file}] to [/repo] folder ...")
         sftp.put(f"{zip_file}", f"repo/{zip_file}")
-
 
         # Upload root files to the /zips folder
         print("- uploading root files to [/zips] folder ...")
@@ -357,62 +356,77 @@ def main():
     parser.add_argument("--version", help="New repository version number to set")
     parser.add_argument("--zip", action="store_true", help="Only create the ZIP file")
     parser.add_argument("--dry-run", action="store_true", help="Do not write any files")
-    parser.add_argument("--transfer", action="store_true", help="Transfer files to Kodi repository")
-    parser.add_argument("--generate", action="store_true", help="Only generate repository files")
-    parser.add_argument("--changelog", action="store_true", help="Only update changelog.txt")
+    parser.add_argument(
+        "--transfer", action="store_true", help="Transfer files to Kodi repository"
+    )
+    parser.add_argument(
+        "--generate", action="store_true", help="Only generate repository files"
+    )
+    parser.add_argument(
+        "--changelog", action="store_true", help="Only update changelog.txt"
+    )
 
     args = parser.parse_args()
 
-    if args.dry_run and not args.zip and not args.transfer and not args.generate and not args.changelog:
-        print("the [--dry-run] flag requires [--zip] or [--transfer] or [--generate] or [--changelog] flag(s)")
+    if (
+        args.dry_run
+        and not args.zip
+        and not args.transfer
+        and not args.generate
+        and not args.changelog
+    ):
+        print(
+            "the [--dry-run] flag requires [--zip] or [--transfer] or [--generate] or [--changelog] flag(s)"
+        )
         return
 
     # Get current/new version info
     tree = ET.parse("addon.xml")
     root = tree.getroot()
     repo_id = root.get("id")
-    repo_version = root.get("version")
+    current_version = root.get("version")
 
-    new_repo_version = (
+    new_version = (
         args.version
-        if (args.version and args.version != repo_version)
-        else repo_version
+        if (args.version and args.version != current_version)
+        else current_version
     )
 
-    if new_repo_version != repo_version and not is_bump(new_repo_version, repo_version):
-        print(f"New repository version [{new_repo_version}] is not higher than current version [{repo_version}]. Aborting!")
+    if new_version != current_version and not is_bump(new_version, current_version):
+        print(
+            f"New repository version [{new_version}] is not higher than current version [{current_version}]. Aborting!"
+        )
         return
 
-    # External addons - property is the name of the addon, value is the github username
-    # Assuming that the full repo path is https://github.com/{github_username}/{addon_id}
-    external_addons = {
-        "script.iptv.xtream-to-m3u": ("verkurkie", True),
-    }
+    if new_version != current_version:
+        # External addons - property is the name of the addon, value is the github username
+        # Assuming that the full repo path is https://github.com/{github_username}/{addon_id}
+        external_addons = {"script.iptv.xtream-to-m3u": ("verkurkie", True)}
 
-    if args.generate:
-        generate_repo_files(external_addons, args.dry_run)
-        return
+        if args.generate:
+            generate_repo_files(external_addons, args.dry_run)
+            return
 
-    if args.changelog:
-        update_changelog(new_repo_version, args.dry_run)
-        return
+        if args.changelog:
+            update_changelog(new_version, args.dry_run)
+            return
 
-    if args.zip:
-        # Update repository addon if manually requested with a new version
-        if new_repo_version != repo_version:
-            update_addon_xml(repo_id, new_repo_version, args.dry_run)
-            
-        # Always attempt to update changelog and build ZIP
-        # (update_changelog handles its own duplicate-entry detection)
-        update_changelog(new_repo_version, args.dry_run)
-        build_zip(repo_id, new_repo_version, args.dry_run)
+        if args.zip:
+            # Update repository addon if manually requested with a new version
+            update_addon_xml(repo_id, new_version, args.dry_run)
 
-    if args.transfer:
-        # Generate metadata
-        generate_repo_files(external_addons, args.dry_run)
+            # Update changelog
+            update_changelog(new_version, args.dry_run)
 
-        # Transfer files to verkurkie.com
-        transfer_to_kodi_repository(new_repo_version, args.dry_run)
+            # Build ZIP
+            build_zip(repo_id, new_version, args.dry_run)
+
+        if args.transfer:
+            # Generate metadata
+            generate_repo_files(external_addons, args.dry_run)
+
+            # Transfer files to verkurkie.com
+            transfer_to_kodi_repository(new_version, args.dry_run)
 
 
 if __name__ == "__main__":

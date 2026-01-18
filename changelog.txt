@@ -1,2 +1,11 @@
+v1.0.0
+- ci: move build process from semantic-release to separate step
+- ci: more github token issues
+- ci: fix issues in the release process related to github token
+- ci: fix release process and revert versioning
+- ci: update github workflow to run semantic-release from the CLI
+- ci: update commit parser used by semantic-release
+- feat: add all repository files, build process and CI workflow
+
 v0.0.1
 - Initial commit
