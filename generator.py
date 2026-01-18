@@ -236,11 +236,11 @@ def generate_repo_files(external_addons={}, dry_run=False):
         req = urllib.request.Request(raw_url)
 
         # Fetch the file using native python urllib
-        # If use_token is true, use the `GH_TOKEN` variable from environment
+        # If use_token is true, use the `GITHUB_TOKEN` variable from environment
         if use_token:
-            token = os.getenv("GH_TOKEN")
+            token = os.getenv("GITHUB_TOKEN")
             if not token:
-                raise ValueError("GH_TOKEN environment variable is not set")
+                raise ValueError("GITHUB_TOKEN environment variable is not set")
             # Headers are the correct way to pass a personal access token to GitHub
             req.add_header("Authorization", f"token {token}")
 
