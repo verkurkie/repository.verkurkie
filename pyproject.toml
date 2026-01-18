@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "repository.verkurkie"
-version = "1.0.0"
+version = "0.0.1"
 description = "Verkurkie Kodi Repository build scripts"
 requires-python = ">=3.8"
 dependencies = [
@@ -22,8 +22,11 @@ version_toml = ["pyproject.toml:project.version"]
 version_variables = ["addon.xml:version"]
 branch = "main"
 upload_to_pypi = false
-build_command = "python3 generator.py --zip --transfer --changelog"
-commit_parser = "angular"
+build_command = "python3 generator.py --zip --transfer"
+commit_parser = "conventional"
+
+[tool.semantic_release.changelog]
+enabled = false
 
 [tool.semantic_release.commit_parser_options]
 major_tags = ["major"]

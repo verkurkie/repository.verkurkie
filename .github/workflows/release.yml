@@ -38,7 +38,7 @@ jobs:
           git config user.email github-actions@github.com
           
           # Run the version bump, build, and push
-          semantic-release version
+          semantic-release version --no-vcs-release --no-changelog
           
           # Check if a new tag was created on this commit
           if [ "$(git tag --points-at HEAD)" ]; then
