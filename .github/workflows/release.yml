@@ -29,6 +29,7 @@ jobs:
       - name: Python Semantic Release
         id: semantic
         env:
+          GH_TOKEN: ${{ secrets.PAT_GITHUB }}
           GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
           FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_USER: ${{ secrets.FTP_USER }}
@@ -51,6 +52,7 @@ jobs:
       - name: GitHub Release
         if: steps.semantic.outputs.released == 'true'
         env:
+          GH_TOKEN: ${{ secrets.PAT_GITHUB }}
           GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
         uses: softprops/action-gh-release@v2
         with:
