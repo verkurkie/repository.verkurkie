@@ -39,26 +39,6 @@ def is_bump(v1, v2):
     return False
 
 
-def update_addon_xml(addon_id, new_version, dry_run=False):
-    tree = ET.parse("addon.xml")
-    root = tree.getroot()
-    current_version = root.get("version")
-
-    if current_version == new_version:
-        print(
-            f"the [addon.xml] file is already at version [{new_version}] - skipping update."
-        )
-        return
-
-    print(f"Updating [addon.xml] from [{current_version}] to [{new_version}]...")
-    if dry_run:
-        print("[DRY-RUN] Would update [addon.xml] version.")
-        return
-
-    root.set("version", new_version)
-    tree.write("addon.xml", encoding="UTF-8", xml_declaration=True)
-
-
 def generate_md5_file():
     """Create a new md5 hash"""
     import hashlib
@@ -392,40 +372,28 @@ def main():
         else current_version
     )
 
-    if new_version != current_version and not is_bump(new_version, current_version):
-        print(
-            f"New repository version [{new_version}] is not higher than current version [{current_version}]. Aborting!"
-        )
+    # External addons configuration
+    external_addons = {"script.iptv.xtream-to-m3u": ("verkurkie", True)}
+
+    if args.generate:
+        generate_repo_files(external_addons, args.dry_run)
         return
 
-    if new_version != current_version:
-        # External addons - property is the name of the addon, value is the github username
-        # Assuming that the full repo path is https://github.com/{github_username}/{addon_id}
-        external_addons = {"script.iptv.xtream-to-m3u": ("verkurkie", True)}
+    if args.changelog:
+        update_changelog(new_version, args.dry_run)
+        return
 
-        if args.generate:
-            generate_repo_files(external_addons, args.dry_run)
-            return
-
-        if args.changelog:
-            update_changelog(new_version, args.dry_run)
-            return
-
+    # In CI (post-PSR bump), the versions will match. We must still run the build.
+    if args.zip or args.transfer:
+        # Update changelog
+        update_changelog(new_version, args.dry_run)
+        
         if args.zip:
-            # Update repository addon if manually requested with a new version
-            update_addon_xml(repo_id, new_version, args.dry_run)
-
-            # Update changelog
-            update_changelog(new_version, args.dry_run)
-
-            # Build ZIP
             build_zip(repo_id, new_version, args.dry_run)
 
         if args.transfer:
-            # Generate metadata
+            # Refresh ignored repository files (addons.xml) before transfer
             generate_repo_files(external_addons, args.dry_run)
-
-            # Transfer files to verkurkie.com
             transfer_to_kodi_repository(new_version, args.dry_run)
 
 

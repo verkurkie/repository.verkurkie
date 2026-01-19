@@ -1,5 +1,10 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build_backend = "setuptools.build_meta"
+
 [project]
 name = "repository.verkurkie"
+version = "1.0.0"
 description = "Verkurkie Kodi Repository"
 requires-python = ">=3.8"
 dependencies = [
@@ -13,11 +18,15 @@ dev = [
 ]
 
 [tool.semantic_release]
-version_variable = "addon.xml:version"
+version_toml = ["pyproject.toml:project.version"]
+version_variables = ["addon.xml:version"]
 branch = "main"
 upload_to_pypi = false
-build_command = ""
+build_command = "python generator.py --zip --transfer"
+build_command_env = ["GH_TOKEN", "GITHUB_TOKEN", "FTP_HOST", "FTP_USER", "FTP_PASS"]
 commit_parser = "conventional"
+commit_message = "chore: bump version to {version} [skip ci]"
+commit_additional_files = ["changelog.txt"]
 
 [tool.semantic_release.commit_parser_options]
 major_tags = ["major"]

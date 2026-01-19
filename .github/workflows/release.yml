@@ -31,6 +31,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PAT_GITHUB }}
           GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASS: ${{ secrets.FTP_PASS }}
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
@@ -45,25 +48,6 @@ jobs:
           else
             echo "released=false" >> $GITHUB_OUTPUT
           fi
-
-      - name: Build and Version ZIP
-        if: steps.semantic.outputs.released == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.PAT_GITHUB }}
-          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
-          FTP_HOST: ${{ secrets.FTP_HOST }}
-          FTP_USER: ${{ secrets.FTP_USER }}
-          FTP_PASS: ${{ secrets.FTP_PASS }}
-        run: python generator.py --zip --transfer --version ${{ steps.semantic.outputs.tag }}
-
-      - name: Commit version bump
-        if: steps.semantic.outputs.released == 'true'
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add addon.xml changelog.txt
-          git commit -m "chore: bump version to ${{ steps.semantic.outputs.version }} [skip ci]"
-          git push
 
       - name: GitHub Release
         if: steps.semantic.outputs.released == 'true'
