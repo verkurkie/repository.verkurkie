@@ -1,3 +1,6 @@
+v1.0.2
+- fix: changelog not being updated in CI
+
 v1.0.0
 - ci: move build process from semantic-release to separate step
 - ci: more github token issues
