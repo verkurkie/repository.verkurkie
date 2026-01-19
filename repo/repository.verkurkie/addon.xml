@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="repository.verkurkie" name="Verkurkie Repository" version="1.0.2" provider-name="verkurkie">
+    <requires>
+        <import addon="xbmc.addon" version="20.0.0"/>
+    </requires>
+    <extension point="xbmc.addon.repository" name="Verkurkie Repository">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/verkurkie/repository.verkurkie/main/repo/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/verkurkie/repository.verkurkie/main/repo/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/verkurkie/repository.verkurkie/main/repo/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Verkurkie Repository</summary>
+        <description>A repository of add-ons that Verkurkie developed for a personal Kodi system</description>
+        <disclaimer></disclaimer>
+        <news>1.0.2
+- fix: changelog not being updated in CI</news>
+        <platform>all</platform>
+        <language></language>
+        <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+        <forum></forum>
+        <website></website>
+        <source>https://github.com/verkurkie/repository.verkurkie</source>
+        <email>github at verkurkie dot com</email>
+    </extension>
+</addon>

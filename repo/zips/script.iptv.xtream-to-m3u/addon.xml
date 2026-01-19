@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<addon id="script.iptv.xtream-to-m3u" name="Xtream to M3U" version="1.0.11" provider-name="verku">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="pvr.iptvsimple" />
+    </requires>
+    <extension point="xbmc.python.script" library="main.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary lang="en_GB">Reduces Xtream IPTV playlists</summary>
+        <description lang="en_GB">A tool to filter and reduce Xtream IPTV playlists for better
+            performance in Kodi.</description>
+        <license>GPL-2.0-only</license>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>

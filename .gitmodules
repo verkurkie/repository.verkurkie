@@ -1,0 +1,3 @@
+[submodule "repo/script.iptv.xtream-to-m3u"]
+	path = repo/script.iptv.xtream-to-m3u
+	url = https://github.com/verkurkie/script.iptv.xtream-to-m3u
