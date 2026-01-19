@@ -119,22 +119,27 @@ def update_changelog(new_version, dry_run=False):
 
     new_entry = f"v{new_version}\n{commits}\n\n"
 
+    # Use absolute path to ensure we are writing to the repo root in CI
+    repo_root = os.path.dirname(os.path.abspath(__file__))
+    changelog_path = os.path.join(repo_root, "changelog.txt")
+
     content = ""
-    if os.path.exists("changelog.txt"):
-        with open("changelog.txt", "r") as f:
+    if os.path.exists(changelog_path):
+        with open(changelog_path, "r", encoding="utf-8") as f:
             content = f.read()
 
     # Ensure we don't duplicate the version if it's already there
     if content.startswith(f"v{new_version}"):
-        print(f"Changelog already has entry for {new_version}, skipping.")
+        print(f"Changelog already has entry for {new_version}, skipping write.")
         return
 
-    if dry_run:
-        print(f"[DRY-RUN] Would prepend to changelog.txt:\n{new_entry}")
-        return
-
-    with open("changelog.txt", "w") as f:
+    print(f"Writing new entry to {changelog_path}...")
+    with open(changelog_path, "w", encoding="utf-8") as f:
         f.write(new_entry + content)
+
+    # Verification for CI logs
+    written_lines = new_entry.strip().split("\n")
+    print(f"Successfully updated changelog. Latest entry: {written_lines[0]}")
 
 
 def build_zip(addon_id, version, dry_run=False):
