@@ -13,6 +13,10 @@ from xml.etree import ElementTree
 SCRIPT_VERSION = 2
 KODI_VERSIONS = ["krypton", "leia", "matrix", "repo"]
 IGNORE = [
+    "docs",
+    "build.py",
+    "pyproject.toml",
+    "README.md",
     ".git",
     ".github",
     ".gitignore",
