@@ -1,8 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons><addon id="repository.verkurkie" name="Verkurkie Repository" version="1.0.3" provider-name="verkurkie">
-    <requires>
-        <import addon="xbmc.addon" version="20.0.0" />
-    </requires>
     <extension point="xbmc.addon.repository" name="Verkurkie Repository">
         <dir>
             <info compressed="false">https://raw.githubusercontent.com/verkurkie/repository.verkurkie/main/repo/zips/addons.xml</info>
