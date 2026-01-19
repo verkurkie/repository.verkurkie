@@ -23,5 +23,9 @@
         <website></website>
         <source>https://github.com/verkurkie/repository.verkurkie</source>
         <email>github at verkurkie dot com</email>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
     </extension>
 </addon>
