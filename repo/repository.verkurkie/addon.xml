@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="repository.verkurkie" name="Verkurkie Repository" version="1.0.2" provider-name="verkurkie">
+<addon id="repository.verkurkie" name="Verkurkie Repository" version="1.0.3" provider-name="verkurkie">
     <requires>
         <import addon="xbmc.addon" version="20.0.0"/>
     </requires>
@@ -14,8 +14,6 @@
         <summary>Verkurkie Repository</summary>
         <description>A repository of add-ons that Verkurkie developed for a personal Kodi system</description>
         <disclaimer></disclaimer>
-        <news>1.0.2
-- fix: changelog not being updated in CI</news>
         <platform>all</platform>
         <language></language>
         <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
