@@ -18,11 +18,11 @@
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="script.iptv.xtream-to-m3u" name="Xtream to M3U" version="1.1.0" provider-name="verku">
+</addon><addon id="script.iptv.xtream-to-m3u" name="Xtream to M3U" version="1.1.1" provider-name="verku">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
-        <import addon="pvr.iptvsimple" version="Current.Version.Number" />
-        <import addon="service.cronxbmc" version="Current.Version.Number" />
+        <import addon="pvr.iptvsimple" />
+        <import addon="service.cronxbmc" />
     </requires>
     <extension point="xbmc.python.script" library="main.py">
         <provides>executable</provides>
