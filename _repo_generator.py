@@ -140,51 +140,55 @@ class Generator:
                             )
                         )
 
-    def _create_zip(self, folder, addon_id, version):
-        """
-        Creates a zip file in the zips directory for the given addon.
-        """
+    def build_zip(self, folder, addon_id, version):
+        zip_name = f"{addon_id}-{version}.zip"
         addon_folder = os.path.join(self.release_path, folder)
         zip_folder = os.path.join(self.zips_path, addon_id)
         if not os.path.exists(zip_folder):
             os.makedirs(zip_folder)
-
         final_zip = os.path.join(zip_folder, "{0}-{1}.zip".format(addon_id, version))
-        if not os.path.exists(final_zip):
-            zip = zipfile.ZipFile(final_zip, "w", compression=zipfile.ZIP_DEFLATED)
-            root_len = len(os.path.dirname(os.path.abspath(addon_folder)))
 
-            for root, dirs, files in os.walk(addon_folder):
-                # remove any unneeded artifacts
-                for i in IGNORE:
-                    if i in dirs:
-                        try:
-                            dirs.remove(i)
-                        except:
-                            pass
-                    for f in files:
-                        if f.startswith(i):
-                            try:
-                                files.remove(f)
-                            except:
-                                pass
+        # Files and directories to include as per RELEASE.md
+        contents = {
+            "repo": ["addon.xml", "icon.png", "fanart.jpg"],
+            "addon": [
+                "addon.xml",
+                "main.py",
+                "fanart.jpg",
+                "icon.png",
+                "resources",
+                "changelog.txt",
+                "README.md",
+            ],
+        }
 
-                archive_root = os.path.abspath(root)[root_len:]
+        includes = (
+            contents["repo"] if addon_id == "repository.verkurkie" else contents["addon"]
+        )
 
-                for f in files:
-                    fullpath = os.path.join(root, f)
-                    archive_name = os.path.join(archive_root, f)
-                    zip.write(fullpath, archive_name, zipfile.ZIP_DEFLATED)
+        with zipfile.ZipFile(final_zip, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for item in includes:
+                item_path = os.path.join(addon_folder, item)
+                if not os.path.exists(item_path):
+                    print(f"Warning: [{item_path}] not found, skipping.")
+                    continue
 
-            zip.close()
-            size = convert_bytes(os.path.getsize(final_zip))
-            print(
-                "Zip created for {} ({}) - {}".format(
-                    color_text(addon_id, 'cyan'),
-                    color_text(version, 'green'),
-                    color_text(size, 'yellow'),
-                )
-            )
+                if os.path.isfile(item_path):
+                    arcname = os.path.join(addon_id, item)
+                    zipf.write(item_path, arcname=arcname)
+                elif os.path.isdir(item_path):
+                    for root, dirs, files in os.walk(item_path):
+                        if "__pycache__" in dirs:
+                            dirs.remove("__pycache__")
+
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            # Calculate arcname relative to the parent of item, then prefix with addon_id
+                            rel_path = os.path.relpath(file_path)
+                            arcname = os.path.join(addon_id, rel_path)
+                            zipf.write(file_path, arcname=arcname)
+
+        print("Successfully updated {}".format(color_text(zip_name, 'yellow')))
 
     def _copy_meta_files(self, addon_id, addon_folder):
         """
@@ -261,7 +265,7 @@ class Generator:
 
                 if updated:
                     # Create the zip files
-                    self._create_zip(addon, id, version)
+                    self.build_zip(addon, id, version)
                     self._copy_meta_files(addon, os.path.join(self.zips_path, id))
             except Exception as e:
                 print(

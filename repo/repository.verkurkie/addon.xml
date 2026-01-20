@@ -1,23 +1,18 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<addon id="repository.verkurkie" name="Verkurkie Repository" version="1.0.3" provider-name="verkurkie">
-    <extension point="xbmc.addon.repository" name="Verkurkie Repository">
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="repository.verkurkie" name="Verkurkie Repo" version="1.0.3" provider-name="verkurkie">
+    <extension point="xbmc.addon.repository" name="Verkurkie Repo">
         <dir>
             <info compressed="false">https://raw.githubusercontent.com/verkurkie/repository.verkurkie/main/repo/zips/addons.xml</info>
             <checksum>https://raw.githubusercontent.com/verkurkie/repository.verkurkie/main/repo/zips/addons.xml.md5</checksum>
             <datadir zip="true">https://raw.githubusercontent.com/verkurkie/repository.verkurkie/main/repo/zips/</datadir>
+            <hashes>false</hashes>
         </dir>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary>Verkurkie Repository</summary>
-        <description>A repository of add-ons that Verkurkie developed for a personal Kodi system</description>
-        <disclaimer></disclaimer>
+        <summary>Verkurkie Repo</summary>
+        <description>Kodi repository to support the script.iptv.xtream-to-m3u addon and other tools by verkurkie.</description>
+        <disclaimer>This repository is provided as-is without any warranties.</disclaimer>
         <platform>all</platform>
-        <language></language>
-        <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
-        <forum></forum>
-        <website></website>
-        <source>https://github.com/verkurkie/repository.verkurkie</source>
-        <email>github at verkurkie dot com</email>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
