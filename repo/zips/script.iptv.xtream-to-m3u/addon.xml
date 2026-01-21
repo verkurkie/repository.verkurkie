@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<addon id="script.iptv.xtream-to-m3u" name="Xtream to M3U" version="1.1.1" provider-name="verku">
+<addon id="script.iptv.xtream-to-m3u" name="Xtream to M3U" version="1.1.2" provider-name="verku">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="pvr.iptvsimple" />

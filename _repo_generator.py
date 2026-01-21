@@ -184,7 +184,7 @@ class Generator:
                         for file in files:
                             file_path = os.path.join(root, file)
                             # Calculate arcname relative to the parent of item, then prefix with addon_id
-                            rel_path = os.path.relpath(file_path)
+                            rel_path = os.path.relpath(file_path, addon_folder)
                             arcname = os.path.join(addon_id, rel_path)
                             zipf.write(file_path, arcname=arcname)
 
