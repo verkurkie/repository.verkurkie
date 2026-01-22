@@ -107,6 +107,20 @@ def copy_repo_zip():
     print("- copied file: {}".format(color_text(file, 'green')))
 
 
+def check_changes():
+    # Check if there are other changes in the repository and ask user to check them and add whatever else they want to commit
+    diff = subprocess.run(["git", "diff", "--quiet"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if diff.returncode != 0:
+        # There are pending changes - ask the user for action
+        result = user_confirm("There are unstaged changes. Continue to review and/or add more changes?", is_commit=True)
+
+        if not result:
+            return
+
+        # Check again after changes
+        check_changes()
+
+
 def user_confirm(msg, is_commit=False, default="yes"):
     default = default.lower()
     if is_commit:
@@ -117,7 +131,7 @@ def user_confirm(msg, is_commit=False, default="yes"):
     answers = "{} / {} / {}".format(default_yes, default_no, "(a)dd") if is_commit else "{} / {}".format(default_yes, default_no)
     try:
         user_input = input("{} {}: ".format(msg, answers))
-        if not user_input.lower() in ["yes", "y", "no", "n", "add", "a", ""]:
+        if user_input.lower() not in ["yes", "y", "no", "n", "add", "a", ""]:
             print(color_text("Invalid input. Please try again.", "red"))
             return user_confirm(msg, is_commit, default)
     except (KeyboardInterrupt, EOFError):
@@ -142,9 +156,9 @@ def user_confirm(msg, is_commit=False, default="yes"):
 
 def run_git():
     # Check if '--push' and/or '--commit' were requested
-    do_push = '--push' in sys.argv
-    do_commit = True if do_push else '--commit' in sys.argv
-    no_confirm = '-y' in sys.argv or '--yes' in sys.argv
+    is_ci = '--ci' in sys.argv
+    do_push = '--push' in sys.argv or is_ci
+    do_commit = '--commit' in sys.argv or do_push
 
     # Check for '--commit-msg {message}' and extract the message
     commit_msg_parts = []
@@ -168,13 +182,21 @@ def run_git():
         subprocess.run(["git", "add", "repository*.zip"], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(["git", "add", "repo/zips/"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        # Check if anything was actually staged
+        # Check for staged changes
         staged = subprocess.run(["git", "diff", "--cached", "--quiet"])
+
+        # Check for additional changes
+        if not is_ci and staged.returncode == 0:
+            check_changes()
+
+        # Check for staged changes again
+        staged = subprocess.run(["git", "diff", "--cached", "--quiet"])
+
         if staged.returncode == 0:
-            print(color_text("Nothing staged for commit", "yellow"))
+            print(color_text("Nothing to commit", "yellow"))
         else:
             try:
-                run_commit = no_confirm or user_confirm("Commit these changes?", is_commit=True)
+                run_commit = is_ci or user_confirm("Commit these changes?", is_commit=True)
                 if run_commit:
                     subprocess.run(["git", "commit", "-m", commit_msg], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     print(color_text("Changes committed to local repository!\n", "green"))
@@ -198,14 +220,14 @@ def run_git():
 
         # Ask the user for confirmation to push (if not --yes)
         try:
-            user_confirm_push = True if no_confirm else user_confirm("Push to GitHub?")
+            user_confirm_push = True if is_ci else user_confirm("Push to GitHub?")
         except (KeyboardInterrupt, EOFError):
             print(color_text("\nOperation cancelled.", "yellow"))
             sys.exit(0)
 
         if user_confirm_push:
             try:
-                subprocess.run(["git", "push"], check=True)
+                # subprocess.run(["git", "push"], check=True)
                 print(color_text("Commits pushed to GitHub!\n", "green"))
             except Exception as e:
                 print(color_text(f"Error during git operations: {e}", "red"))
@@ -250,8 +272,8 @@ class Generator:
     the checked-out repo.
     """
 
-    def __init__(self, release):
-        self.release_path = release
+    def __init__(self):
+        self.release_path = 'repo'
         self.zips_path = os.path.join(self.release_path, "zips")
         addons_xml_path = os.path.join(self.zips_path, "addons.xml")
         md5_path = os.path.join(self.zips_path, "addons.xml.md5")
@@ -285,10 +307,10 @@ class Generator:
                                 color_text(compiled, 'green')
                             )
                         )
-                    except:
+                    except Exception as e:
                         print(
-                            "Failed to remove compiled python file: {}".format(
-                                color_text(compiled, 'red')
+                            "Failed to remove compiled python file: {} - Error: {}".format(
+                                color_text(compiled, 'red'), color_text(e, 'red')
                             )
                         )
             for dir in dirnames:
@@ -301,10 +323,10 @@ class Generator:
                                 color_text(compiled, 'green')
                             )
                         )
-                    except:
+                    except Exception as e:
                         print(
-                            "Failed to remove __pycache__ cache folder:  {}".format(
-                                color_text(compiled, 'red')
+                            "Failed to remove __pycache__ cache folder:  {} - Error: {}".format(
+                                color_text(compiled, 'red'), color_text(e, 'red')
                             )
                         )
 
@@ -492,12 +514,15 @@ class Generator:
 if __name__ == "__main__":
     # Check if there are committed/uncommitted or untracked changes in submodule(s)
     check_submodules()
+
     # Clean up old zips & other artifacts
     cleanup()
+
     # Generate repository & addon zip files
-    for release in [r for r in KODI_VERSIONS if os.path.exists(r)]:
-        Generator(release)
+    Generator()
+
     # Copy repository zip file to root folder
     copy_repo_zip()
-    # Commit & push changes to GitHub
+
+    # Commit & push changes to GitHub (only on local runs! in CI, the git actions are handled by update-submodule.yml)
     run_git()

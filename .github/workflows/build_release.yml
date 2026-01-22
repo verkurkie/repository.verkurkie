@@ -1,0 +1,23 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository.verkurkie repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_GITHUB }} # Needed to push changes back
+          submodules: true
+
+      - name: Build ZIP files
+        run: |
+          # Configure git
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          python3 ./build.py --ci --commit-msg=chore: update repository and addons

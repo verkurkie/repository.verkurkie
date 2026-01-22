@@ -18,21 +18,27 @@ jobs:
         run: |
           REPO_NAME="${{ github.event.client_payload.repo_name }}"
           git submodule update --remote repo/$REPO_NAME
-          
+
       - name: Commit and Push Update
         run: |
+          # Get repo name from client-payload
           REPO_NAME="${{ github.event.client_payload.repo_name }}"
+          
+          # Configure git
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+
+          # Add updated submodule
           git add repo/$REPO_NAME
-          # Only commit if there are changes
-          # Determine commit message based on payload
+
+          # Determine commit message based on 'new_version' value in client-payload
           NEW_VERSION="${{ github.event.client_payload.new_version }}"
-          COMMIT_MSG="chore: update submodule repo/$REPO_NAME"
-          
           if [ "$NEW_VERSION" != "" ]; then
-            COMMIT_MSG="chore: update submodule repo/$REPO_NAME (New Release: v$NEW_VERSION)"
+            COMMIT_MSG="chore: update submodule repo/$REPO_NAME (new version: v$NEW_VERSION)"
+          else
+            COMMIT_MSG="chore: update submodule repo/$REPO_NAME (new version: none)"
           fi
 
+          # Only commit if there are changes
           git diff --staged --quiet || git commit -m "$COMMIT_MSG"
           git push
