@@ -96,15 +96,22 @@ def copy_repo_zip():
     # Note: the ZIP file name is unknown because it may have a new version number! Copy has to be for [repository.verkurkie*.zip]!
 
     # Use glob to find the file
-    file = glob.glob("repo/zips/repository.verkurkie/*.zip")[0]
+    zip_file = glob.glob("repo/zips/repository.verkurkie/*.zip")[0]
+    md5_file = glob.glob("repo/zips/repository.verkurkie/*.zip.md5")[0]
 
-    if not file:
+    if not zip_file:
         raise RuntimeError("No repository ZIP file found in repo/zips/repository.verkurkie")
+    if not md5_file:
+        raise RuntimeError("No repository MD5 file found in repo/zips/repository.verkurkie")
     
     # Copy the file
     print("Copying repository ZIP file to the root folder...")
-    shutil.copy(file, ".")
-    print("- copied file: {}".format(color_text(file, 'green')))
+    shutil.copy(zip_file, ".")
+    print("- copied file: {}".format(color_text(zip_file, 'green')))
+
+    print("Copying repository MD5 file to the root folder...")
+    shutil.copy(md5_file, ".")
+    print("- copied file: {}".format(color_text(md5_file, 'green')))
 
 
 def check_changes():
@@ -337,6 +344,7 @@ class Generator:
         if not os.path.exists(zip_folder):
             os.makedirs(zip_folder)
         final_zip = os.path.join(zip_folder, "{0}-{1}.zip".format(addon_id, version))
+        zip_md5_path = os.path.join(zip_folder, "{0}-{1}.zip.md5".format(addon_id, version))
 
         # Files and directories to include as per RELEASE.md
         contents = {
@@ -378,7 +386,11 @@ class Generator:
                             arcname = os.path.join(addon_id, rel_path)
                             zipf.write(file_path, arcname=arcname)
 
-        print("Successfully updated {}".format(color_text(zip_name, 'yellow')))
+        print("Successfully updated {}".format(color_text(final_zip, 'yellow')))
+
+        # Create MD5 for the zip file
+        self._generate_md5_file(final_zip, zip_md5_path)
+        print("Successfully updated {}".format(color_text(zip_md5_path, 'yellow')))
 
     def _copy_meta_files(self, addon_id, addon_folder):
         """
@@ -456,6 +468,7 @@ class Generator:
                 if updated:
                     # Create the zip files
                     self.build_zip(addon, id, version)
+                    # Copy meta files
                     self._copy_meta_files(addon, os.path.join(self.zips_path, id))
             except Exception as e:
                 print(
@@ -479,14 +492,12 @@ class Generator:
                     )
                 )
 
-    def _generate_md5_file(self, addons_xml_path, md5_path):
+    def _generate_md5_file(self, file_path, md5_path):
         """
         Generates a new addons.xml.md5 file.
         """
         try:
-            m = hashlib.md5(
-                open(addons_xml_path, "r", encoding="utf-8").read().encode("utf-8")
-            ).hexdigest()
+            m = hashlib.md5(open(file_path, "rb").read()).hexdigest()
             self._save_file(m, file=md5_path)
 
             return True
