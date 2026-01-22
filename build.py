@@ -234,7 +234,7 @@ def run_git():
 
         if user_confirm_push:
             try:
-                # subprocess.run(["git", "push"], check=True)
+                subprocess.run(["git", "push"], check=True)
                 print(color_text("Commits pushed to GitHub!\n", "green"))
             except Exception as e:
                 print(color_text(f"Error during git operations: {e}", "red"))
