@@ -1,0 +1,38 @@
+name: Update Submodule
+
+on:
+  repository_dispatch:
+    types: [submodule-update]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository.verkurkie repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_GITHUB }} # Needed to push changes back
+          submodules: true
+
+      - name: Update Submodule to Latest
+        run: |
+          REPO_NAME="${{ github.event.client_payload.repo_name }}"
+          git submodule update --remote repo/$REPO_NAME
+          
+      - name: Commit and Push Update
+        run: |
+          REPO_NAME="${{ github.event.client_payload.repo_name }}"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add repo/$REPO_NAME
+          # Only commit if there are changes
+          # Determine commit message based on payload
+          NEW_VERSION="${{ github.event.client_payload.new_version }}"
+          COMMIT_MSG="chore: update submodule repo/$REPO_NAME"
+          
+          if [ "$NEW_VERSION" != "" ]; then
+            COMMIT_MSG="chore: update submodule repo/$REPO_NAME (New Release: v$NEW_VERSION)"
+          fi
+
+          git diff --staged --quiet || git commit -m "$COMMIT_MSG"
+          git push
