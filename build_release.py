@@ -5,6 +5,9 @@
 """
 
 import os
+import sys
+import glob
+import subprocess
 import shutil
 import hashlib
 import zipfile
@@ -73,6 +76,171 @@ def convert_bytes(num):
         if num < 1024.0:
             return "%3.1f %s" % (num, x)
         num /= 1024.0
+
+
+def cleanup():
+    # Cleanup the root folder:
+    # pe.cfg, *.bak, *.zip, repo/zips
+    print("Cleaning up the root folder...")
+    for file in os.listdir("."):
+        if file.endswith(".bak") or file == "pe.cfg" or file.endswith(".zip"):
+            print("- removing file: {}".format(color_text(file, 'red')))
+            os.remove(file)
+    if os.path.exists("repo/zips"):
+        print("- removing folder: {}".format(color_text("repo/zips", 'red')))
+        shutil.rmtree("repo/zips")
+
+
+def copy_repo_zip():
+    # Copy the newly created repository ZIP file from repo/zips/repository.verkurkie/ folder to the root folder
+    # Note: the ZIP file name is unknown because it may have a new version number! Copy has to be for [repository.verkurkie*.zip]!
+
+    # Use glob to find the file
+    file = glob.glob("repo/zips/repository.verkurkie/*.zip")[0]
+
+    if not file:
+        raise RuntimeError("No repository ZIP file found in repo/zips/repository.verkurkie")
+    
+    # Copy the file
+    print("Copying repository ZIP file to the root folder...")
+    shutil.copy(file, ".")
+    print("- copied file: {}".format(color_text(file, 'green')))
+
+
+def user_confirm(msg, is_commit=False, default="yes"):
+    default = default.lower()
+    if is_commit:
+        subprocess.run(["git", "status"], stderr=subprocess.DEVNULL)
+
+    default_yes = "[Y]es" if default == "yes" else "(y)es"
+    default_no = "[N]o" if default == "no" else "(n)o"
+    answers = "{} / {} / {}".format(default_yes, default_no, "(a)dd") if is_commit else "{} / {}".format(default_yes, default_no)
+    try:
+        user_input = input("{} {}: ".format(msg, answers))
+        if not user_input.lower() in ["yes", "y", "no", "n", "add", "a", ""]:
+            print(color_text("Invalid input. Please try again.", "red"))
+            return user_confirm(msg, is_commit, default)
+    except (KeyboardInterrupt, EOFError):
+        print(color_text("\nOperation cancelled.", "yellow"))
+        sys.exit(0)
+
+    if is_commit and user_input in ["a", "add"]:
+        try:
+            add = input("Enter additional commit(s) - you can use glob patterns! (e.g. repo/zips/*): ")
+        except (KeyboardInterrupt, EOFError):
+            print(color_text("\nOperation cancelled.", "yellow"))
+            sys.exit(0)
+        if add:
+            subprocess.run(["git", "add", add], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return user_confirm(msg, is_commit=True)
+
+    answers_true = ["y", "yes"]
+    if default == 'yes':
+        answers_true.append("")
+    return user_input.lower() in answers_true
+
+
+def run_git():
+    # Check if '--push' and/or '--commit' were requested
+    do_push = '--push' in sys.argv
+    do_commit = True if do_push else '--commit' in sys.argv
+    no_confirm = '-y' in sys.argv or '--yes' in sys.argv
+
+    # Check for '--commit-msg {message}' and extract the message
+    commit_msg_parts = []
+    found_msg_flag = False
+    for i, arg in enumerate(sys.argv[1:], 1):
+        if not found_msg_flag:
+            if arg.startswith('--commit-msg='):
+                commit_msg_parts.append(arg.split('=', 1)[1])
+                found_msg_flag = True
+            elif arg == '--commit-msg':
+                found_msg_flag = True
+        else:
+            if arg.startswith('-'):
+                break
+            commit_msg_parts.append(arg)
+
+    commit_msg = " ".join(commit_msg_parts) if commit_msg_parts else "chore: update repository and addons"
+
+    # Files of interest are the repository ZIP file in the root and everything in repo/zips
+    if do_commit:
+        subprocess.run(["git", "add", "repository*.zip"], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["git", "add", "repo/zips/"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        # Check if anything was actually staged
+        staged = subprocess.run(["git", "diff", "--cached", "--quiet"])
+        if staged.returncode == 0:
+            print(color_text("Nothing staged for commit", "yellow"))
+        else:
+            try:
+                run_commit = no_confirm or user_confirm("Commit these changes?", is_commit=True)
+                if run_commit:
+                    subprocess.run(["git", "commit", "-m", commit_msg], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    print(color_text("Changes committed to local repository!\n", "green"))
+            except Exception as e:
+                print(color_text(f"Error during git operations: {e}", "red"))
+
+    if do_push:
+        # Check if there is anything to push
+        # Check if our local HEAD is ahead of the remote origin/main
+        # (This ignores staged changes that haven't been committed yet)
+        res = subprocess.run(["git", "rev-list", "--count", "origin/main..HEAD"], capture_output=True, text=True)
+        if res.returncode == 0 and res.stdout.strip() == "0":
+            # No unpushed commits... but check if we have uncommitted staged changes!
+            staged = subprocess.run(["git", "diff", "--cached", "--quiet"])
+            if staged.returncode == 0:
+                print(color_text("Nothing to push to GitHub.\n", "yellow"))
+                return
+            else:
+                print(color_text("Warning: You have staged changes - you need to commit them before pushing to GitHub!", "yellow"))
+                return
+
+        # Ask the user for confirmation to push (if not --yes)
+        try:
+            user_confirm_push = True if no_confirm else user_confirm("Push to GitHub?")
+        except (KeyboardInterrupt, EOFError):
+            print(color_text("\nOperation cancelled.", "yellow"))
+            sys.exit(0)
+
+        if user_confirm_push:
+            try:
+                subprocess.run(["git", "push"], check=True)
+                print(color_text("Commits pushed to GitHub!\n", "green"))
+            except Exception as e:
+                print(color_text(f"Error during git operations: {e}", "red"))
+
+
+def check_submodules():
+    # Check if there are committed/uncommitted or untracked changes in submodule(s)
+    print("Updating & checking submodules...")
+    subprocess.run(["git", "submodule", "update", "--init", "--recursive"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True).stdout
+    
+    # Get the list of submodules dynamically
+    submodules = subprocess.run(["git", "submodule", "--quiet", "foreach", "echo $sm_path"], 
+                               capture_output=True, text=True).stdout.splitlines()
+
+    dirty_submodules = []
+    for line in status.splitlines():
+        # Line format: XY path (e.g., ' M repo/script.iptv.xtream-to-m3u')
+        path = line[3:].strip()
+        if any(path.startswith(sm) for sm in submodules):
+            dirty_submodules.append(path)
+
+    if dirty_submodules:
+        print(color_text("Warning: The following submodule(s) have changes:", "red"))
+        for sm in dirty_submodules:
+            print(f"- {sm}")
+        
+        try:
+            cancel_msg = "Operation cancelled. Please clean submodule(s) and try again."
+            if not user_confirm("Do you want to continue with generating the repository?", default="no"):
+                print(color_text(cancel_msg, "yellow"))
+                sys.exit(0)
+        except (KeyboardInterrupt, EOFError):
+            print(color_text(cancel_msg, "yellow"))
+            sys.exit(0)
 
 
 class Generator:
@@ -322,5 +490,14 @@ class Generator:
 
 
 if __name__ == "__main__":
+    # Check if there are committed/uncommitted or untracked changes in submodule(s)
+    check_submodules()
+    # Clean up old zips & other artifacts
+    cleanup()
+    # Generate repository & addon zip files
     for release in [r for r in KODI_VERSIONS if os.path.exists(r)]:
         Generator(release)
+    # Copy repository zip file to root folder
+    copy_repo_zip()
+    # Commit & push changes to GitHub
+    run_git()
