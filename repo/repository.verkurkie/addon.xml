@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="repository.verkurkie" name="Verkurkie Repo" version="1.0.3" provider-name="verkurkie">
+<addon id="repository.verkurkie" name="Verkurkie Repo" version="1.0.4" provider-name="verkurkie">
     <extension point="xbmc.addon.repository" name="Verkurkie Repo">
         <dir>
-            <info compressed="false">https://raw.githubusercontent.com/verkurkie/repository.verkurkie/main/repo/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/verkurkie/repository.verkurkie/main/repo/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/verkurkie/repository.verkurkie/main/repo/zips/</datadir>
+            <info compressed="false">https://verkurkie.github.io/repository.verkurkie/zips/addons.xml</info>
+            <checksum>https://verkurkie.github.io/repository.verkurkie/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://verkurkie.github.io/repository.verkurkie/zips/</datadir>
             <hashes>true</hashes>
         </dir>
     </extension>

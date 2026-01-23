@@ -2,6 +2,13 @@
 .idea
 .vscode
 .secrets
+.temp
+
+# Specific build artifacts (deployed to github pages)
+index.html
+repository*.zip*
+repo/zips/
+zips/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -33,7 +33,7 @@ jobs:
           # Configure git
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          python3 ./build.py --ci --commit-msg="chore: update repository and addons [skip ci]"
+          python3 ./build.py
 
       - name: Setup Github Pages
         uses: actions/configure-pages@v5

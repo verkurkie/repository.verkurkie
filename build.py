@@ -80,29 +80,29 @@ def convert_bytes(num):
 
 def cleanup():
     # Cleanup the root folder:
-    # pe.cfg, *.bak, *.zip, repo/zips
+    # pe.cfg, *.bak, *.zip, /zips
     print("Cleaning up the root folder...")
     for file in os.listdir("."):
         if file.endswith(".bak") or file == "pe.cfg" or file.endswith(".zip"):
             print("- removing file: {}".format(color_text(file, 'red')))
             os.remove(file)
-    if os.path.exists("repo/zips"):
-        print("- removing folder: {}".format(color_text("repo/zips", 'red')))
-        shutil.rmtree("repo/zips")
+    if os.path.exists("zips"):
+        print("- removing folder: {}".format(color_text("zips", 'red')))
+        shutil.rmtree("zips")
 
 
 def copy_repo_zip():
-    # Copy the newly created repository ZIP file from repo/zips/repository.verkurkie/ folder to the root folder
+    # Copy the newly created repository ZIP file from zips/repository.verkurkie/ folder to the root folder
     # Note: the ZIP file name is unknown because it may have a new version number! Copy has to be for [repository.verkurkie*.zip]!
 
     # Use glob to find the file
-    zip_file = glob.glob("repo/zips/repository.verkurkie/*.zip")[0]
-    md5_file = glob.glob("repo/zips/repository.verkurkie/*.zip.md5")[0]
+    zip_file = glob.glob("zips/repository.verkurkie/*.zip")[0]
+    md5_file = glob.glob("zips/repository.verkurkie/*.zip.md5")[0]
 
     if not zip_file:
-        raise RuntimeError("No repository ZIP file found in repo/zips/repository.verkurkie")
+        raise RuntimeError("No repository ZIP file found in zips/repository.verkurkie")
     if not md5_file:
-        raise RuntimeError("No repository MD5 file found in repo/zips/repository.verkurkie")
+        raise RuntimeError("No repository MD5 file found in zips/repository.verkurkie")
     
     # Copy the file
     print("Copying repository ZIP file to the root folder...")
@@ -128,122 +128,24 @@ def check_changes():
         check_changes()
 
 
-def user_confirm(msg, is_commit=False, default="yes"):
+def user_confirm(msg, default="yes"):
     default = default.lower()
-    if is_commit:
-        subprocess.run(["git", "status"], stderr=subprocess.DEVNULL)
-
     default_yes = "[Y]es" if default == "yes" else "(y)es"
     default_no = "[N]o" if default == "no" else "(n)o"
-    answers = "{} / {} / {}".format(default_yes, default_no, "(a)dd") if is_commit else "{} / {}".format(default_yes, default_no)
+    answers = "{} / {}".format(default_yes, default_no)
     try:
         user_input = input("{} {}: ".format(msg, answers))
-        if user_input.lower() not in ["yes", "y", "no", "n", "add", "a", ""]:
+        if user_input.lower() not in ["yes", "y", "no", "n"]:
             print(color_text("Invalid input. Please try again.", "red"))
-            return user_confirm(msg, is_commit, default)
+            return user_confirm(msg, default)
     except (KeyboardInterrupt, EOFError):
         print(color_text("\nOperation cancelled.", "yellow"))
         sys.exit(0)
-
-    if is_commit and user_input in ["a", "add"]:
-        try:
-            add = input("Enter additional commit(s) - you can use glob patterns! (e.g. repo/zips/*): ")
-        except (KeyboardInterrupt, EOFError):
-            print(color_text("\nOperation cancelled.", "yellow"))
-            sys.exit(0)
-        if add:
-            subprocess.run(["git", "add", add], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return user_confirm(msg, is_commit=True)
 
     answers_true = ["y", "yes"]
     if default == 'yes':
         answers_true.append("")
     return user_input.lower() in answers_true
-
-
-def run_git():
-    # Check if '--push' and/or '--commit' were requested
-    is_ci = '--ci' in sys.argv
-    do_push = '--push' in sys.argv or is_ci
-    do_commit = '--commit' in sys.argv or do_push
-
-    # Check for '--commit-msg {message}' and extract the message
-    commit_msg_parts = []
-    found_msg_flag = False
-    for i, arg in enumerate(sys.argv[1:], 1):
-        if not found_msg_flag:
-            if arg.startswith('--commit-msg='):
-                commit_msg_parts.append(arg.split('=', 1)[1])
-                found_msg_flag = True
-            elif arg == '--commit-msg':
-                found_msg_flag = True
-        else:
-            if arg.startswith('-'):
-                break
-            commit_msg_parts.append(arg)
-
-    commit_msg = " ".join(commit_msg_parts) if commit_msg_parts else "chore: update repository and addons"
-
-    # Files of interest are the repository ZIP file in the root and everything in repo/zips
-    if do_commit:
-        subprocess.run(["git", "add", "repository*.zip*"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run(["git", "add", "repo/zips/"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-        # Check for staged changes
-        staged = subprocess.run(["git", "diff", "--cached", "--quiet"])
-
-        # Check for additional changes
-        if not is_ci and staged.returncode == 0:
-            check_changes()
-
-        # Check for staged changes again
-        staged = subprocess.run(["git", "diff", "--cached", "--quiet"])
-
-        if staged.returncode == 0:
-            print(color_text("Nothing to commit", "yellow"))
-        else:
-            try:
-                run_commit = is_ci or user_confirm("Commit these changes?", is_commit=True)
-                if run_commit:
-                    # For CI, print easy to read overview of commits
-                    if is_ci:
-                        diff = subprocess.run(["git", "diff", "--cached", "--name-status"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        print("\nFiles to be committed:\n")
-                        print(color_text(diff.stdout.decode("utf-8") + "\n", "yellow"))
-
-                    subprocess.run(["git", "commit", "-m", commit_msg], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    print(color_text("Changes committed to local repository!\n", "green"))
-            except Exception as e:
-                print(color_text(f"Error during git operations: {e}", "red"))
-
-    if do_push:
-        # Check if there is anything to push
-        # Check if our local HEAD is ahead of the remote origin/main
-        # (This ignores staged changes that haven't been committed yet)
-        res = subprocess.run(["git", "rev-list", "--count", "origin/main..HEAD"], capture_output=True, text=True)
-        if res.returncode == 0 and res.stdout.strip() == "0":
-            # No unpushed commits... but check if we have uncommitted staged changes!
-            staged = subprocess.run(["git", "diff", "--cached", "--quiet"])
-            if staged.returncode == 0:
-                print(color_text("Nothing to push to GitHub.\n", "yellow"))
-                return
-            else:
-                print(color_text("Warning: You have staged changes - you need to commit them before pushing to GitHub!", "yellow"))
-                return
-
-        # Ask the user for confirmation to push (if not --yes)
-        try:
-            user_confirm_push = True if is_ci else user_confirm("Push to GitHub?")
-        except (KeyboardInterrupt, EOFError):
-            print(color_text("\nOperation cancelled.", "yellow"))
-            sys.exit(0)
-
-        if user_confirm_push:
-            try:
-                subprocess.run(["git", "push"], check=True)
-                print(color_text("Commits pushed to GitHub!\n", "green"))
-            except Exception as e:
-                print(color_text(f"Error during git operations: {e}", "red"))
 
 
 def check_submodules():
@@ -286,7 +188,8 @@ class Generator:
     """
 
     def __init__(self):
-        self.release_path = 'repo'
+        self.release_path = ''
+        self.addon_path = os.path.join(self.release_path, "repo")
         self.zips_path = os.path.join(self.release_path, "zips")
         addons_xml_path = os.path.join(self.zips_path, "addons.xml")
         md5_path = os.path.join(self.zips_path, "addons.xml.md5")
@@ -303,6 +206,8 @@ class Generator:
 
             if self._generate_md5_file(addons_xml_path, md5_path):
                 print("Successfully updated {}".format(color_text(md5_path, 'yellow')))
+
+        self.generate_indices()
 
     def _remove_binaries(self):
         """
@@ -345,7 +250,7 @@ class Generator:
 
     def build_zip(self, folder, addon_id, version):
         zip_name = f"{addon_id}-{version}.zip"
-        addon_folder = os.path.join(self.release_path, folder)
+        addon_folder = os.path.join(self.addon_path, folder)
         zip_folder = os.path.join(self.zips_path, addon_id)
         if not os.path.exists(zip_folder):
             os.makedirs(zip_folder)
@@ -414,7 +319,7 @@ class Generator:
         Copy the addon.xml and relevant art files into the relevant folders in the repository.
         """
 
-        tree = ElementTree.parse(os.path.join(self.release_path, addon_id, "addon.xml"))
+        tree = ElementTree.parse(os.path.join(self.addon_path, addon_id, "addon.xml"))
         root = tree.getroot()
 
         copyfiles = ["addon.xml"]
@@ -426,7 +331,7 @@ class Generator:
                 for art in [a for a in assets if a.text]:
                     copyfiles.append(os.path.normpath(art.text))
 
-        src_folder = os.path.join(self.release_path, addon_id)
+        src_folder = os.path.join(self.addon_path, addon_id)
         for file in copyfiles:
             addon_path = os.path.join(src_folder, file)
             if not os.path.exists(addon_path):
@@ -452,18 +357,18 @@ class Generator:
 
         folders = [
             i
-            for i in os.listdir(self.release_path)
-            if os.path.isdir(os.path.join(self.release_path, i))
+            for i in os.listdir(self.addon_path)
+            if os.path.isdir(os.path.join(self.addon_path, i))
             and i != "zips"
             and not i.startswith(".")
-            and os.path.exists(os.path.join(self.release_path, i, "addon.xml"))
+            and os.path.exists(os.path.join(self.addon_path, i, "addon.xml"))
         ]
 
         addon_xpath = "addon[@id='{}']"
         changed = False
         for addon in folders:
             try:
-                addon_xml_path = os.path.join(self.release_path, addon, "addon.xml")
+                addon_xml_path = os.path.join(self.addon_path, addon, "addon.xml")
                 addon_xml = ElementTree.parse(addon_xml_path)
                 addon_root = addon_xml.getroot()
                 id = addon_root.get('id')
@@ -525,6 +430,106 @@ class Generator:
                 )
             )
 
+    def generate_indices(self):
+        """
+        Generates index.html files for the root, zips folder, and each addon folder.
+        """
+        addons = []
+        folders = [
+            i
+            for i in os.listdir(self.addon_path)
+            if os.path.isdir(os.path.join(self.addon_path, i))
+            and i != "zips"
+            and not i.startswith(".")
+            and os.path.exists(os.path.join(self.addon_path, i, "addon.xml"))
+        ]
+
+        for addon in folders:
+            try:
+                addon_xml_path = os.path.join(self.addon_path, addon, "addon.xml")
+                addon_xml = ElementTree.parse(addon_xml_path)
+                addon_root = addon_xml.getroot()
+                addon_id = addon_root.get('id')
+                version = addon_root.get('version')
+                addons.append({"id": addon_id, "version": version})
+            except Exception as e:
+                print(f"Error parsing {addon}: {e}")
+
+        # sorted by id
+        addons.sort(key=lambda x: x["id"])
+
+        # 1. Generate zips/index.html (List of addon folders)
+        zips_index_path = os.path.join(self.zips_path, "index.html")
+        zips_items = [{"name": "Parent Directory", "href": "../"}]
+        for addon in addons:
+            zips_items.append({"name": addon["id"], "href": f"{addon['id']}/"})
+        
+        with open(zips_index_path, "w") as f:
+            f.write(self._create_index_content(zips_items, title="Index of /zips/"))
+        print("Successfully updated {}".format(color_text(zips_index_path, 'yellow')))
+
+        # 2. Generate zips/{addon_id}/index.html for each addon
+        for addon in addons:
+            addon_id = addon["id"]
+            version = addon["version"]
+            addon_dir = os.path.join(self.zips_path, addon_id)
+            
+            # Gather files in this directory
+            files = []
+            if os.path.exists(addon_dir):
+                files = sorted(os.listdir(addon_dir))
+
+            addon_items = [{"name": "Parent Directory", "href": "../"}]
+            for file in files:
+                addon_items.append({"name": file, "href": file})
+
+            addon_index_path = os.path.join(addon_dir, "index.html")
+            with open(addon_index_path, "w") as f:
+                f.write(self._create_index_content(addon_items, title=f"Index of /zips/{addon_id}/"))
+            print("Successfully updated {}".format(color_text(addon_index_path, 'yellow')))
+
+        # 3. Generate ./index.html (Root)
+        # Find repository.verkurkie version
+        repo_addon = next((a for a in addons if a["id"] == "repository.verkurkie"), None)
+        if repo_addon:
+             root_index_path = "index.html"
+             version = repo_addon["version"]
+             zip_file = f"repository.verkurkie-{version}.zip"
+             md5_file = f"repository.verkurkie-{version}.zip.md5"
+             
+             root_items = [
+                 {"name": zip_file, "href": zip_file},
+                 {"name": md5_file, "href": md5_file},
+                 {"name": "zips", "href": "zips/"}
+             ]
+             
+             with open(root_index_path, "w") as f:
+                 f.write(self._create_index_content(root_items, title="Index of /"))
+             print("Successfully updated {}".format(color_text(root_index_path, 'yellow')))
+
+
+    def _create_index_content(self, items, title="Index"):
+        template = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <title>{title}</title>
+</head>
+<body>
+    <h1>{title}</h1>
+    <pre>
+<a href="?C=N;O=D">Name</a>
+<hr>
+{rows}
+<hr>
+</pre>
+</body>
+</html>"""
+        rows = ""
+        for item in items:
+            rows += f'<a href="{item["href"]}">{item["name"]}</a>\n'
+        
+        return template.format(title=title, rows=rows)
+
     def _save_file(self, data, file):
         """
         Saves a file.
@@ -551,6 +556,3 @@ if __name__ == "__main__":
 
     # Copy repository zip file to root folder
     copy_repo_zip()
-
-    # Commit & push changes to GitHub (only on local runs! in CI, the git actions are handled by update-submodule.yml)
-    run_git()
