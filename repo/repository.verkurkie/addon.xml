@@ -5,7 +5,7 @@
             <info compressed="false">https://verkurkie.github.io/repository.verkurkie/zips/addons.xml</info>
             <checksum>https://verkurkie.github.io/repository.verkurkie/zips/addons.xml.md5</checksum>
             <datadir zip="true">https://verkurkie.github.io/repository.verkurkie/zips/</datadir>
-            <hashes>true</hashes>
+            <hashes>false</hashes>
         </dir>
     </extension>
     <extension point="xbmc.addon.metadata">
