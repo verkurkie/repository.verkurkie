@@ -31,14 +31,14 @@ IGNORE = [
 
 
 def _setup_colors():
-    color = os.system("color")
-    console = 0
     if os.name == 'nt':  # Only if we are running on Windows
+        os.system("color")
         from ctypes import windll
 
         k = windll.kernel32
         console = k.SetConsoleMode(k.GetStdHandle(-11), 7)
-    return color == 1 or console == 1
+        return console == 1
+    return True
 
 
 _COLOR_ESCAPE = "\x1b[{}m"
@@ -371,20 +371,31 @@ class Generator:
                     print(f"Warning: [{item_path}] not found, skipping.")
                     continue
 
+                files_to_zip = []
                 if os.path.isfile(item_path):
-                    arcname = os.path.join(addon_id, item)
-                    zipf.write(item_path, arcname=arcname)
+                    files_to_zip.append((item_path, os.path.join(addon_id, item)))
                 elif os.path.isdir(item_path):
                     for root, dirs, files in os.walk(item_path):
+                        dirs.sort()
                         if "__pycache__" in dirs:
                             dirs.remove("__pycache__")
 
-                        for file in files:
+                        for file in sorted(files):
                             file_path = os.path.join(root, file)
                             # Calculate arcname relative to the parent of item, then prefix with addon_id
                             rel_path = os.path.relpath(file_path, addon_folder)
                             arcname = os.path.join(addon_id, rel_path)
-                            zipf.write(file_path, arcname=arcname)
+                            files_to_zip.append((file_path, arcname))
+
+                for file_path, arcname in files_to_zip:
+                    # Deterministic zip writing: fixed timestamp and permissions
+                    zinfo = zipfile.ZipInfo(arcname)
+                    zinfo.date_time = (2000, 1, 1, 0, 0, 0)
+                    zinfo.compress_type = zipfile.ZIP_DEFLATED
+                    zinfo.external_attr = 0o100644 << 16  # -rw-r--r--
+
+                    with open(file_path, "rb") as f:
+                        zipf.writestr(zinfo, f.read())
 
         print("Successfully updated {}".format(color_text(final_zip, 'yellow')))
 
