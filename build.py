@@ -11,6 +11,7 @@ import subprocess
 import shutil
 import hashlib
 import zipfile
+import time
 from xml.etree import ElementTree
 
 SCRIPT_VERSION = 2
@@ -66,16 +67,6 @@ def color_text(text, color):
         if _SUPPORTS_COLOR
         else text
     )
-
-
-def convert_bytes(num):
-    """
-    this function will convert bytes to MB.... GB... etc
-    """
-    for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
-        if num < 1024.0:
-            return "%3.1f %s" % (num, x)
-        num /= 1024.0
 
 
 def cleanup():
@@ -180,6 +171,180 @@ def check_submodules():
             sys.exit(0)
 
 
+def generate_indices():
+    """
+    Generates index.html files for the root and recursively for the zips folder.
+    """
+    release_path = '.'
+    addon_path = os.path.join(release_path, "repo")
+    zips_path = os.path.join(release_path, "zips")
+    addons_xml_path = os.path.join(zips_path, "addons.xml")
+    md5_path = os.path.join(zips_path, "addons.xml.md5")
+
+    # 1. Recursive zips/ generation
+    for root, dirs, files in os.walk(zips_path):
+        # Sort for deterministic output
+        dirs.sort()
+        files.sort()
+
+        # Skip writing to the directory if it doesn't exist (sanity check)
+        if not os.path.exists(root):
+            continue
+
+        # Build list of items
+        items = []
+        
+        # Add parent directory link
+        rel_path = os.path.relpath(root, zips_path)
+        items.append({
+            "name": "../", 
+            "href": "../", 
+            "date": "-", 
+            "size": "-"
+        })
+
+        # Add directories
+        for d in dirs:
+            path = os.path.join(root, d)
+            stats = os.stat(path)
+            mtime = time.strftime('%Y-%m-%d %H:%M', time.localtime(stats.st_mtime))
+            items.append({
+                "name": f"{d}/", 
+                "href": f"{d}/", 
+                "date": mtime, 
+                "size": "-"
+            })
+
+        # Add files (excluding index.html)
+        for f in files:
+            if f == "index.html":
+                continue
+            path = os.path.join(root, f)
+            stats = os.stat(path)
+            mtime = time.strftime('%Y-%m-%d %H:%M', time.localtime(stats.st_mtime))
+            size = str(stats.st_size)
+            items.append({
+                "name": f, 
+                "href": f, 
+                "date": mtime, 
+                "size": size
+            })
+
+        # Determine title
+        if rel_path == ".":
+            title = "Index of /zips/"
+        else:
+            title = f"Index of /zips/{rel_path}/"
+        
+        # Write index.html
+        index_path = os.path.join(root, "index.html")
+        with open(index_path, "w") as f:
+            f.write(_create_index_content(items, title=title))
+        print(f"Updated index: {color_text(index_path, 'yellow')}")
+
+    # 2. Generate ./index.html (Root)
+    # We need to find the version of repository.verkurkie to link it correctly
+    try:
+        repo_xml_path = os.path.join(addon_path, "repository.verkurkie", "addon.xml")
+        if os.path.exists(repo_xml_path):
+            repo_xml = ElementTree.parse(repo_xml_path)
+            version = repo_xml.getroot().get('version')
+            
+            root_index_path = "index.html"
+            zip_file = f"repository.verkurkie-{version}.zip"
+            md5_file = f"repository.verkurkie-{version}.zip.md5"
+            
+            # Helper to get stats for root items
+            def get_root_item(name, href, is_dir=False):
+                if is_dir:
+                    path = href.rstrip('/') # remove trailing slash for stat
+                    if os.path.exists(path):
+                        stats = os.stat(path)
+                        mtime = time.strftime('%Y-%m-%d %H:%M', time.localtime(stats.st_mtime))
+                        return {"name": name, "href": href, "date": mtime, "size": "-"}
+                elif os.path.exists(name):
+                    stats = os.stat(name)
+                    mtime = time.strftime('%Y-%m-%d %H:%M', time.localtime(stats.st_mtime))
+                    size = str(stats.st_size)
+                    return {"name": name, "href": href, "date": mtime, "size": size}
+                return {"name": name, "href": href, "date": "-", "size": "-"}
+
+            root_items = [
+                get_root_item("zips/", "zips/", is_dir=True),
+                get_root_item(zip_file, zip_file),
+                get_root_item(md5_file, md5_file),
+            ]
+            
+            with open(root_index_path, "w") as f:
+                f.write(_create_index_content(root_items, title="Index of /"))
+            print("Successfully updated {}".format(color_text(root_index_path, 'yellow')))
+    except Exception as e:
+        print(f"Error generating root index: {e}")
+
+def _create_index_content(items, title="Index"):
+    template = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>{title}</title>
+</head>
+<body>
+<h1>{title}</h1>
+<pre>
+{header}
+<hr>
+{rows}
+<hr>
+</pre>
+</body>
+</html>"""
+    # Calculate max length for Name column (min 50)
+    max_len = 50
+    for item in items:
+        if len(item["name"]) > max_len:
+            max_len = len(item["name"])
+    
+    # Add a little buffer
+    name_width = max_len + 5
+    date_width = 20
+    size_width = 10
+
+    # Header
+    header = f'{"Name".ljust(name_width)}{"Last modified".ljust(date_width)}{"Size".rjust(size_width)}'
+
+    # Rows
+    rows = ""
+    for item in items:
+        name_cell = f'<a href="{item["href"]}">{item["name"]}</a>'.ljust(name_width + (len(f'<a href="{item["href"]}">{item["name"]}</a>') - len(item["name"])))
+        # Logic above for ljust on HTML string is tricky because len() counts tags.
+        # Easier way: constructs the plain text padded line, then replace Name with Link.
+        
+        line_fmt = f'{{name:<{name_width}}}{{date:<{date_width}}}{{size:>{size_width}}}'
+        # But we can't easily reuse it because we need to inject the <a> tag around the name *before* padding? 
+        # No, if we pad the LINK it messes up alignment relative to visible text.
+        # We must pad the visible text, but output the link.
+        # Standard way: <a href>Name</a> + spaces
+        
+        spaces = " " * (name_width - len(item["name"]))
+        link = f'<a href="{item["href"]}">{item["name"]}</a>'
+        row = f'{link}{spaces}{item["date"].ljust(date_width)}{item["size"].rjust(size_width)}'
+        rows += row + "\n"
+    
+    return template.format(title=title, rows=rows, header=header)
+
+
+def _save_file(data, file):
+    """
+    Saves a file.
+    """
+    try:
+        open(file, "w").write(data)
+    except Exception as e:
+        print(
+            "An error occurred saving {}!\n{}".format(
+                color_text(file, 'yellow'), color_text(e, 'red')
+            )
+        )
+
 class Generator:
     """
     Generates a new addons.xml file from each addons addon.xml file
@@ -206,8 +371,6 @@ class Generator:
 
             if self._generate_md5_file(addons_xml_path, md5_path):
                 print("Successfully updated {}".format(color_text(md5_path, 'yellow')))
-
-        self.generate_indices()
 
     def _remove_binaries(self):
         """
@@ -420,7 +583,7 @@ class Generator:
         """
         try:
             m = hashlib.md5(open(file_path, "rb").read()).hexdigest()
-            self._save_file(m, file=md5_path)
+            _save_file(m, file=md5_path)
 
             return True
         except Exception as e:
@@ -429,120 +592,6 @@ class Generator:
                     color_text(md5_path, 'yellow'), color_text(e, 'red')
                 )
             )
-
-    def generate_indices(self):
-        """
-        Generates index.html files for the root, zips folder, and each addon folder.
-        """
-        addons = []
-        folders = [
-            i
-            for i in os.listdir(self.addon_path)
-            if os.path.isdir(os.path.join(self.addon_path, i))
-            and i != "zips"
-            and not i.startswith(".")
-            and os.path.exists(os.path.join(self.addon_path, i, "addon.xml"))
-        ]
-
-        for addon in folders:
-            try:
-                addon_xml_path = os.path.join(self.addon_path, addon, "addon.xml")
-                addon_xml = ElementTree.parse(addon_xml_path)
-                addon_root = addon_xml.getroot()
-                addon_id = addon_root.get('id')
-                version = addon_root.get('version')
-                addons.append({"id": addon_id, "version": version})
-            except Exception as e:
-                print(f"Error parsing {addon}: {e}")
-
-        # sorted by id
-        addons.sort(key=lambda x: x["id"])
-
-        # 1. Generate zips/index.html (List of addon folders)
-        zips_index_path = os.path.join(self.zips_path, "index.html")
-        zips_items = [{"name": "Parent Directory", "href": "../"}]
-        for addon in addons:
-            zips_items.append({"name": addon["id"], "href": f"{addon['id']}/"})
-        
-        with open(zips_index_path, "w") as f:
-            f.write(self._create_index_content(zips_items, title="Index of /zips/"))
-        print("Successfully updated {}".format(color_text(zips_index_path, 'yellow')))
-
-        # 2. Generate zips/{addon_id}/index.html for each addon
-        for addon in addons:
-            addon_id = addon["id"]
-            version = addon["version"]
-            addon_dir = os.path.join(self.zips_path, addon_id)
-            
-            # Gather files in this directory
-            files = []
-            if os.path.exists(addon_dir):
-                files = sorted(os.listdir(addon_dir))
-
-            addon_items = [{"name": "Parent Directory", "href": "../"}]
-            for file in files:
-                addon_items.append({"name": file, "href": file})
-
-            addon_index_path = os.path.join(addon_dir, "index.html")
-            with open(addon_index_path, "w") as f:
-                f.write(self._create_index_content(addon_items, title=f"Index of /zips/{addon_id}/"))
-            print("Successfully updated {}".format(color_text(addon_index_path, 'yellow')))
-
-        # 3. Generate ./index.html (Root)
-        # Find repository.verkurkie version
-        repo_addon = next((a for a in addons if a["id"] == "repository.verkurkie"), None)
-        if repo_addon:
-             root_index_path = "index.html"
-             version = repo_addon["version"]
-             zip_file = f"repository.verkurkie-{version}.zip"
-             md5_file = f"repository.verkurkie-{version}.zip.md5"
-             
-             root_items = [
-                 {"name": zip_file, "href": zip_file},
-                 {"name": md5_file, "href": md5_file},
-                 {"name": "zips", "href": "zips/"}
-             ]
-             
-             with open(root_index_path, "w") as f:
-                 f.write(self._create_index_content(root_items, title="Index of /"))
-             print("Successfully updated {}".format(color_text(root_index_path, 'yellow')))
-
-
-    def _create_index_content(self, items, title="Index"):
-        template = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
-<head>
-    <title>{title}</title>
-</head>
-<body>
-    <h1>{title}</h1>
-    <pre>
-<a href="?C=N;O=D">Name</a>
-<hr>
-{rows}
-<hr>
-</pre>
-</body>
-</html>"""
-        rows = ""
-        for item in items:
-            rows += f'<a href="{item["href"]}">{item["name"]}</a>\n'
-        
-        return template.format(title=title, rows=rows)
-
-    def _save_file(self, data, file):
-        """
-        Saves a file.
-        """
-        try:
-            open(file, "w").write(data)
-        except Exception as e:
-            print(
-                "An error occurred saving {}!\n{}".format(
-                    color_text(file, 'yellow'), color_text(e, 'red')
-                )
-            )
-
 
 if __name__ == "__main__":
     # Check if there are committed/uncommitted or untracked changes in submodule(s)
@@ -556,3 +605,6 @@ if __name__ == "__main__":
 
     # Copy repository zip file to root folder
     copy_repo_zip()
+
+    # Generate indices
+    generate_indices()
