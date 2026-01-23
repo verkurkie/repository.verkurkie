@@ -186,7 +186,7 @@ def run_git():
 
     # Files of interest are the repository ZIP file in the root and everything in repo/zips
     if do_commit:
-        subprocess.run(["git", "add", "repository*.zip"], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["git", "add", "repository*.zip*"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(["git", "add", "repo/zips/"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         # Check for staged changes
@@ -205,6 +205,12 @@ def run_git():
             try:
                 run_commit = is_ci or user_confirm("Commit these changes?", is_commit=True)
                 if run_commit:
+                    # For CI, print easy to read overview of commits
+                    if is_ci:
+                        diff = subprocess.run(["git", "diff", "--cached", "--name-status"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        print("\nFiles to be committed:\n")
+                        print(color_text(diff.stdout.decode("utf-8") + "\n", "yellow"))
+
                     subprocess.run(["git", "commit", "-m", commit_msg], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     print(color_text("Changes committed to local repository!\n", "green"))
             except Exception as e:
