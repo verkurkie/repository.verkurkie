@@ -3,10 +3,13 @@
 
 Kodi Repository for Verkurkie's Kodi add-ons.
 
+The repository files are hosted on Github Pages at: [https://verkurkie.github.io/repository.verkurkie](https://verkurkie.github.io/repository.verkurkie)
+
+The repository is mainly for development & test purposes but glad to share & exchange ideas with the community!
+
 ## Table of Contents <!-- omit in toc -->
 
-- [About](#about)
-  - [Kodi](#kodi)
+- [About Kodi](#about-kodi)
 - [Installing the repo](#installing-the-repo)
   - [Add a file source to Kodi](#add-a-file-source-to-kodi)
   - [Turn on "Unknown sources" in Kodi:](#turn-on-unknown-sources-in-kodi)
@@ -15,21 +18,15 @@ Kodi Repository for Verkurkie's Kodi add-ons.
   - [Install the add-on:](#install-the-add-on)
 - [Resources](#resources)
 
-## About
+## About Kodi
 
-The repository is hosted on Github Pages at: <a href="https://verkurkie.github.io/repository.verkurkie" target="_blank" rel="noopener noreferrer">https://verkurkie.github.io/repository.verkurkie</a>
-
-The repository is mainly for development & test purposes but glad to share & exchange ideas with the community!
-
-### Kodi
-
-<a href="https://kodi.tv" target="_blank" rel="noopener noreferrer">
-  <img src="docs/kodi-logo-128x128.png" alt="Go to Kodi main site">
-</a>
+<p align="center">
+  <img src="docs/kodi-logo-128x128.png" alt="Kodi Media Player">
+</p>
 
 Kodi is a free and open source media player and entertainment hub for digital media. It is available for multiple operating systems, including Windows, macOS, Linux, iOS, and Android.
 
-Download link: <a href="https://kodi.tv/download" target="_blank" rel="noopener noreferrer">https://kodi.tv/download</a>.
+Download link: [https://kodi.tv/download](https://kodi.tv/download).
 
 ## Installing the repo
 
@@ -79,15 +76,15 @@ To validate:
 
 Kodi:
 
-- <a href="https://kodi.tv" target="_blank" rel="noopener noreferrer">Kodi main website</a>
-- <a href="https://www.cyberghostvpn.com/privacyhub/install-all-kodi-addons/" target="_blank" rel="noopener noreferrer">Installing Kodi add-ons</a>
-- <a href="https://forum.kodi.tv" target="_blank" rel="noopener noreferrer">Kodi forum</a>
+- [Kodi main website](https://kodi.tv)
+- [Installing Kodi add-ons](https://www.cyberghostvpn.com/privacyhub/install-all-kodi-addons/)
+- [Kodi forum](https://forum.kodi.tv)
 
 Inspiration for this repo:
 
-- <a href="https://kodi.wiki/view/Add-on_repositories" target="_blank" rel="noopener noreferrer">Kodi Add-on repositories</a> (official docs)
-- <a href="https://github.com/chadparry/kodi-repository.chad.parry.org/blob/master/README.md" target="_blank" rel="noopener noreferrer">chadparry/kodi-repository.chad.parry.org</a>
-- <a href="https://raw.githubusercontent.com/chadparry/kodi-repository.chad.parry.org/master/tools/create_repository.py" target="_blank" rel="noopener noreferrer">chadparry/kodi-repository.chad.parry.org/tools/create_repository.py</a>
-- <a href="https://github.com/drinfernoo/repository.example" target="_blank" rel="noopener noreferrer">drinfernoo/repository.example</a>
-- <a href="https://github.com/peno64/repository.peno64" target="_blank" rel="noopener noreferrer">peno64/repository.peno64</a>
-- <a href="https://github.com/peno64/repository.example/tree/master#" target="_blank" rel="noopener noreferrer">peno64/repository.example</a>
+- [Kodi Add-on repositories](https://kodi.wiki/view/Add-on_repositories) (official docs)
+- [chadparry/kodi-repository.chad.parry.org](https://github.com/chadparry/kodi-repository.chad.parry.org/blob/master/README.md)
+- [chadparry/kodi-repository.chad.parry.org/tools/create_repository.py](https://raw.githubusercontent.com/chadparry/kodi-repository.chad.parry.org/master/tools/create_repository.py)
+- [drinfernoo/repository.example](https://github.com/drinfernoo/repository.example)
+- [peno64/repository.peno64](https://github.com/peno64/repository.peno64)
+- [peno64/repository.example](https://github.com/peno64/repository.example/tree/master#)

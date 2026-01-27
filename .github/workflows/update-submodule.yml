@@ -34,9 +34,9 @@ jobs:
           # Determine commit message based on 'new_version' value in client-payload
           NEW_VERSION="${{ github.event.client_payload.new_version }}"
           if [ "$NEW_VERSION" != "" ]; then
-            COMMIT_MSG="chore: update submodule repo/$REPO_NAME (new version: v$NEW_VERSION)"
+            COMMIT_MSG="chore: update $REPO_NAME (new version: v$NEW_VERSION)"
           else
-            COMMIT_MSG="chore: update submodule repo/$REPO_NAME (new version: none)"
+            COMMIT_MSG="chore: update $REPO_NAME (new version: none)"
           fi
 
           # Only commit if there are changes
